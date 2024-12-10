@@ -1,17 +1,23 @@
 <template>
-  <div class="widget">
-    <div :style="{ backgroundColor: state.selectedColor }" class="wb-header">
-      <img class="badge-logo" src="/greensparks.svg" alt="Logo" />
+  <div class="wb-wrapper">
+    <div :style="{ backgroundColor: getColor() }" class="wb-header">
+      <img
+        class="wb-logo"
+        src="/greensparks.svg"
+        alt="Logo"
+        :class="{ 'wb-green': isBgLight() }"
+      />
 
-      <div class="wb-heading">
+      <div class="wb-heading" :class="{ 'wb-green': isBgLight() }">
         <p class="wb-heading-t">This product {{ state.action }}</p>
-        <p class="wb-heading-b">{{ state.amount }} {{ state.type }}</p>
+        <p class="wb-heading-b">{{ amountText() }} {{ typeText() }}</p>
       </div>
     </div>
 
-    <div class="widget-controls">
+    <div class="wb-body">
       <div class="wb-list">
         <label>Link to Public Profile</label>
+        <span class="wb-info">&#9432;</span>
         <input v-model="state.linked" type="checkbox" class="wb-checkbox" />
       </div>
 
@@ -19,10 +25,10 @@
         <label>Badge Color</label>
         <div class="wb-box-list">
           <div
-            v-for="color in colorOptions"
-            :key="color"
-            :style="{ backgroundColor: color }"
-            :class="{ 'wb-outline': color === state.selectedColor }"
+            v-for="color of Object.keys(colorOptions)"
+            :key="colorOptions[color]"
+            :style="{ backgroundColor: colorOptions[color] }"
+            :class="{ 'wb-outline': colorOptions[color] === getColor() }"
             class="wb-checkbox"
             @click="onClickColor(color)"
           ></div>
@@ -30,20 +36,17 @@
       </div>
       <div class="wb-list">
         <label>Activate badge</label>
-        <label class="switch">
-          <input
-            v-model="state.active"
-            type="checkbox"
-            @click="onClickActive"
-          />
-          <span class="slider round"></span>
-        </label>
+        <SliderComponent
+          :active="state.active"
+          @toggle="onClickActive()"
+        ></SliderComponent>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+import SliderComponent from "./SliderComponent.vue";
 import { Widget } from "../interfaces";
 import { ref, watch } from "vue";
 
@@ -54,7 +57,13 @@ const emit = defineEmits<{
   (e: "activted", id: number): void;
 }>();
 
-const colorOptions = ["blue", "green", "brown", "white", "black"];
+const colorOptions: Record<string, string> = {
+  blue: "#2E3A8C",
+  green: "#3b755f",
+  beige: "#F2EBDB",
+  white: "white",
+  black: "black",
+};
 
 const state = ref<Widget>({
   id: props.widget.id,
@@ -74,16 +83,43 @@ const onClickActive = (): void => {
   emit("activted", state.value.id);
 };
 
-watch(props.widget, (newState) => {
+const getColor = (): string => {
+  return colorOptions[state.value.selectedColor];
+};
+
+const typeText = (): string => {
+  if (state.value.type === "plastic") {
+    return "plastic bottles";
+  } else if (state.value.type === "carbon") {
+    return "of carbon";
+  } else {
+    return state.value.type;
+  }
+};
+
+const amountText = (): string => {
+  return state.value.type === "carbon"
+    ? `${state.value.amount}kgs`
+    : `${state.value.amount}`;
+};
+
+const isBgLight = (): boolean => {
+  return state.value.selectedColor === "beige" ||
+    state.value.selectedColor === "white"
+    ? true
+    : false;
+};
+
+watch(props.widget, (newState): void => {
   state.value.active = newState.active;
 });
 </script>
 
-<style scoped>
-.widget {
+<style>
+.wb-wrapper {
   border-radius: 8px;
   height: 152px;
-  width: 222px;
+  width: 236px;
   margin: 30px 0px 30px 0px;
 }
 
@@ -94,49 +130,48 @@ watch(props.widget, (newState) => {
   border-radius: 8px;
   padding: 10px;
   margin-bottom: 8px;
-}
-
-.wb-heading {
-  margin-left: 6px;
-  color: white;
-  p {
-    margin: 0;
+  .wb-logo {
+    width: 3.5rem;
+    height: 3.5rem;
   }
-  .wb-heading-t {
-    font-size: 0.8rem;
-  }
-  .wb-heading-b {
-    font-size: 1.5rem;
-    font-weight: 600;
-  }
-}
-
-.wb-list {
-  display: flex;
-  flex-direction: row;
-  justify-content: start;
-  label {
-    color: #3b755f;
-  }
-  input {
-    margin-left: auto;
-  }
-  .wb-box-list {
-    margin-left: auto;
-    display: flex;
-    flex-direction: row;
+  .wb-heading {
+    margin-left: 6px;
+    color: #f9f9f9;
+    p {
+      margin: 0;
+    }
+    .wb-heading-t {
+      font-size: 0.9rem;
+    }
+    .wb-heading-b {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
   }
 }
 
-.badge-logo {
-  width: 4rem;
-  height: 4rem;
-}
-
-.widget-controls {
+.wb-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  .wb-list {
+    display: flex;
+    flex-direction: row;
+    justify-content: start;
+    align-items: center;
+    font-size: 15px;
+    label {
+      color: #3b755f;
+    }
+    input {
+      margin-left: auto;
+    }
+    .wb-box-list {
+      margin-left: auto;
+      display: flex;
+      flex-direction: row;
+    }
+  }
 }
 
 .color-box:hover {
@@ -144,10 +179,11 @@ watch(props.widget, (newState) => {
 }
 
 .wb-checkbox {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   margin-left: 3px;
   cursor: pointer;
+  accent-color: #3b755f;
 }
 
 .wb-outline {
@@ -155,65 +191,14 @@ watch(props.widget, (newState) => {
   outline-offset: -1px;
 }
 
-.switch {
-  margin-left: auto;
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 24px;
+.wb-green {
+  filter: drop-shadow(0px 1000px 0 var(--primary-color));
+  transform: translateY(-1000px);
 }
 
-/* The slider */
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  -webkit-transition: 0.4s;
-  transition: 0.4s;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  -webkit-transition: 0.4s;
-  transition: 0.4s;
-}
-
-input:checked + .slider {
-  background-color: #2196f3;
-}
-
-input:focus + .slider {
-  box-shadow: 0 0 1px #2196f3;
-}
-
-input:checked + .slider:before {
-  -webkit-transform: translateX(26px);
-  -ms-transform: translateX(26px);
-  transform: translateX(26px);
-}
-
-/* Rounded sliders */
-.slider.round {
-  border-radius: 34px;
-}
-
-.slider.round:before {
-  border-radius: 50%;
+.wb-info {
+  font-size: 13px;
+  color: var(--primary-color);
+  margin-bottom: auto;
 }
 </style>
