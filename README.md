@@ -24,3 +24,6 @@
 - Run command 'npm i'.
 - Then run commad 'npm run dev'.
 - This will start the server and the application will be displayed on localhost:4200.
+
+# Screenshot
+![screenshot](screenshot/result.jpg)
